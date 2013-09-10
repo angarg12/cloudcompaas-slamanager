@@ -1,0 +1,380 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns="http://www.grycap.upv.es/cloudcompaas" 
+	xmlns:ccpaas="http://www.grycap.upv.es/cloudcompaas" 
+	elementFormDefault="qualified" attributeFormDefault="qualified"
+	targetNamespace="http://www.grycap.upv.es/cloudcompaas">
+	<!--========================================================================-->
+	<!-- SIMPLE TYPES -->
+	<xsd:simpleType name="xpath">
+	  <xsd:restriction base="xsd:token">
+		<xsd:pattern
+		  value="/?(((\i\c*:)?\i\c*)|\*)(/@?(((\i\c*:)?\i\c*)|\*))+" />
+	  </xsd:restriction>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<xsd:simpleType name="Reputation_Type">
+		<xsd:restriction base="xsd:long"/>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<xsd:simpleType name="Hypervisor_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="vmware"/>
+			<xsd:enumeration value="kvm"/>
+			<xsd:enumeration value="xen"/>
+		</xsd:restriction>
+	</xsd:simpleType>	
+	<!--========================================================================-->
+	<xsd:simpleType name="OSEnumeration_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="unknown"/>
+			<xsd:enumeration value="MACOS"/>
+			<xsd:enumeration value="windows"/>
+			<xsd:enumeration value="linux"/>
+			<xsd:enumeration value="other"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<xsd:simpleType name="Action_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="allow"/>
+			<xsd:enumeration value="deny"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<xsd:simpleType name="Capability_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="get"/>
+			<xsd:enumeration value="put"/>
+			<xsd:enumeration value="post"/>
+			<xsd:enumeration value="delete"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<xsd:simpleType name="Level_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="iaas"/>
+			<xsd:enumeration value="paas"/>
+			<xsd:enumeration value="saas"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!--========================================================================-->
+	<!-- COMPLEX TYPES: Definitions for the RangeValueType -->
+	<xsd:complexType name="Boundary_Type">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:long">
+				<xsd:attribute name="exclusiveBound" type="xsd:boolean" use="optional"/>
+				<xsd:anyAttribute namespace="##other" processContents="lax"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="Exact_Type">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:long">
+				<xsd:attribute name="epsilon" type="xsd:long" use="optional"/>
+				<xsd:anyAttribute namespace="##other" processContents="lax"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="Range_Type">
+		<xsd:sequence>
+			<xsd:element name="LowerBound" type="Boundary_Type"/>
+			<xsd:element name="UpperBound" type="Boundary_Type"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<xsd:complexType name="RangeValue_Type">
+		<xsd:sequence>
+			<xsd:element name="UpperBoundedRange" type="Boundary_Type" minOccurs="0"/>
+			<xsd:element name="LowerBoundedRange" type="Boundary_Type" minOccurs="0"/>
+			<xsd:element name="Exact" type="Exact_Type" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="Range" type="Range_Type" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:element name="All" type="ccpaas:ValueCompositor_Type" />
+	<xsd:complexType name="NotValueCompositor_Type">
+		<xsd:sequence>
+			<xsd:choice maxOccurs="1">
+				<xsd:element name="ExactlyOne"
+					type="ccpaas:ValueCompositor_Type" />
+				<xsd:element name="OneOrMore"
+					type="ccpaas:ValueCompositor_Type" />
+				<xsd:element ref="All" />
+				<xsd:element name="Not"
+					type="ccpaas:NotValueCompositor_Type" />
+					<xsd:element name="Element"
+					type="xsd:string" />
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ValueCompositor_Type">
+		<xsd:sequence>
+			<xsd:choice maxOccurs="unbounded">
+				<xsd:element name="ExactlyOne"
+					type="ccpaas:ValueCompositor_Type" />
+				<xsd:element name="OneOrMore"
+					type="ccpaas:ValueCompositor_Type" />
+				<xsd:element ref="All" />
+				<xsd:element name="Not"
+					type="ccpaas:NotValueCompositor_Type" />
+				<xsd:element name="Element"
+					type="xsd:string" />
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Value_Type">
+		<xsd:sequence>
+			<xsd:choice maxOccurs="1">
+				<xsd:element name="RangeValue" type="RangeValue_Type"/>
+				<xsd:element ref="ccpaas:All" />
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="VirtualContainer_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:VirtualRuntime" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="VirtualRuntime_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:SoftResource" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="OS_Type">
+		<xsd:sequence>
+			<xsd:element name="OSId" type="xsd:long"/>
+			<xsd:element name="OSName" type="ccpaas:OSEnumeration_Type"/>
+			<xsd:element name="OSVersion" type="xsd:string" minOccurs="0"/>
+			<xsd:element name="OSFlavour" type="xsd:string" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Hypervisor" minOccurs="1"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="SoftResource_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:SoftAddOn" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="SoftAddOn_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="VirtualMachine_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:OperatingSystem" minOccurs="1"/>
+			<xsd:element ref="ccpaas:PhysicalResource" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="PhysicalResource_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:PhysicalResourceFlavour" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:PhysicalResourceValue" minOccurs="0"/>
+			<xsd:element ref="ccpaas:PhysicalResourceUnit" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Service_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:ServiceVersion" minOccurs="1"/>
+			<xsd:element ref="ccpaas:ServiceDescription" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="ServiceVersion_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Organization_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:OrganizationReputation" minOccurs="0"/>
+			<xsd:element ref="ccpaas:OrganizationCredits" minOccurs="1"/>
+			<xsd:element ref="ccpaas:User" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="User_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:UserReputation" minOccurs="0"/>
+			<xsd:element ref="ccpaas:UserCredits" minOccurs="1"/>
+			<xsd:element ref="ccpaas:Domains" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Permissions" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Domains_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Domain" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Domain_Type">
+		<xsd:sequence>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Permissions_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Permission" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>	
+	<!--=====================================================================-->
+	<xsd:complexType name="Permission_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Action" minOccurs="1"/>
+			<xsd:element ref="ccpaas:Capability" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Source" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Destiny" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:element ref="ccpaas:Target" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="EndpointReference_Type">
+		<xsd:sequence>
+		<xsd:element name="Element"	type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="ServiceDescriptionTerm" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Metadata_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Replicas" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Backend" minOccurs="0"/>
+			<xsd:element ref="ccpaas:Metrics" minOccurs="0"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Replicas_Type">
+		<xsd:sequence>
+			<xsd:choice maxOccurs="1">
+				<xsd:element name="RangeValue" type="RangeValue_Type"/>
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Metrics_Type">
+		<xsd:sequence>
+			<xsd:element name="Metric" type="Metric_Type"  maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:complexType name="Metric_Type">
+		<xsd:sequence>
+			<xsd:element ref="ccpaas:Level" minOccurs="1"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="Name" type="xsd:string" use="required"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<!--=====================================================================-->
+	<xsd:element name="VirtualContainer" type="ccpaas:VirtualContainer_Type"/>
+	<xsd:element name="VirtualRuntime" type="ccpaas:VirtualRuntime_Type"/>
+	<xsd:element name="OperatingSystem" type="ccpaas:OS_Type"/>
+	<xsd:element name="SoftResource" type="ccpaas:SoftResource_Type"/>
+	<xsd:element name="SoftAddOn" type="ccpaas:SoftAddOn_Type"/>
+	<xsd:element name="VirtualMachine" type="ccpaas:VirtualMachine_Type"/>
+	<xsd:element name="Hypervisor" type="ccpaas:Hypervisor_Type"/>
+	<xsd:element name="PhysicalResource" type="ccpaas:PhysicalResource_Type"/>
+	<xsd:element name="PhysicalResourceFlavour" type="xsd:string"/>
+	<xsd:element name="PhysicalResourceValue" type="ccpaas:Value_Type"/>
+	<xsd:element name="PhysicalResourceUnit" type="xsd:string"/>
+	<xsd:element name="Service" type="ccpaas:Service_Type"/>
+	<xsd:element name="ServiceVersion" type="ccpaas:ServiceVersion_Type"/>
+	<xsd:element name="ServiceDescription" type="xsd:string"/>
+	<xsd:element name="ServiceReplicas" type="ccpaas:RangeValue_Type"/>
+	<xsd:element name="Organization" type="ccpaas:Organization_Type"/>
+	<xsd:element name="OrganizationReputation" type="ccpaas:Reputation_Type"/>
+	<xsd:element name="OrganizationCredits" type="xsd:long"/>
+	<xsd:element name="User" type="ccpaas:User_Type"/>
+	<xsd:element name="UserReputation" type="ccpaas:Reputation_Type"/>
+	<xsd:element name="UserCredits" type="xsd:long"/>
+	<xsd:element name="Domains" type="ccpaas:Domains_Type"/>
+	<xsd:element name="Domain" type="ccpaas:Domain_Type"/>
+	<xsd:element name="Permissions" type="ccpaas:Permissions_Type"/>
+	<xsd:element name="Permission" type="ccpaas:Permission_Type"/>
+	<xsd:element name="Action" type="ccpaas:Action_Type"/>
+	<xsd:element name="Capability" type="ccpaas:Capability_Type"/>
+	<xsd:element name="Level" type="ccpaas:Level_Type"/>
+	<xsd:element name="Source" type="ccpaas:xpath"/>
+	<xsd:element name="Destiny" type="ccpaas:xpath"/>
+	<xsd:element name="Target" type="xsd:string"/>
+	<xsd:element name="EndpointReference" type="ccpaas:EndpointReference_Type"/>
+	<xsd:element name="Metadata" type="ccpaas:Metadata_Type"/>
+	<xsd:element name="Replicas" type="ccpaas:Replicas_Type"/>
+	<xsd:element name="Backend" type="xsd:string"/>
+	<xsd:element name="Metrics" type="ccpaas:Metrics_Type"/>
+	<xsd:element name="Metric" type="ccpaas:Metric_Type"/>
+</xsd:schema>
